@@ -1,0 +1,18 @@
+/* Been here field label */
+"Been Here" = "行ったことある";
+
+/* location field label */
+"Location" = "住所";
+
+/* name field label */
+"Name" = "店名";
+
+/* tel field label */
+"TEL" = "電話番号";
+
+/* type field label */
+"Type" = "タイプ";
+
+/* No comment provided by engineer. */
+"testStr" = "テスト文字列";
+

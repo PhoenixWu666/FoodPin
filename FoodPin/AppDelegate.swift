@@ -7,15 +7,134 @@
 //
 
 import UIKit
+import CoreData
+import UserNotifications
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
+    
+    enum QuickAction: String {
+        case OpenFavorites = "OpenFavorites"
+        case OpenDiscover = "OpenDiscover"
+        case NewRestaurant = "NewRestaurant"
+        
+        init?(fullID: String){
+            guard let shortcutID = fullID.components(separatedBy: ".").last else {
+                return nil
+            }
+            
+            self.init(rawValue: shortcutID)
+        }
+    }
 
     var window: UIWindow?
 
+    lazy var container: NSPersistentContainer = {
+        let container = NSPersistentContainer(name: "FoodPin")
+        container.loadPersistentStores(completionHandler: {
+            storeDescription, error in
+            
+            if let nserror = error as NSError? {
+                fatalError("Unresolved error: \(nserror), \(nserror.userInfo)")
+            }
+        })
+        
+        return container
+    }()
+    
+    /**
+     Function from UIApplicationDelegate.
+     實作 quick action item 執行動作
+     */
+    func application(_ application: UIApplication, performActionFor shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
+        completionHandler(handleQuickAction(shortcutItem))
+    }
+    
+    private func handleQuickAction(_ shortcutItem: UIApplicationShortcutItem) -> Bool {
+        if let tabBarController = window?.rootViewController as? UITabBarController {
+            if let shortcutID = QuickAction(fullID: shortcutItem.type) {
+                switch shortcutID {
+                case .OpenFavorites:
+                    tabBarController.selectedIndex = 0
+                    
+                case .OpenDiscover:
+                    tabBarController.selectedIndex = 1
+                    
+                case .NewRestaurant:
+                    return performAddRestaurantCtrl(tabBarCtrl: tabBarController)
+                }
+                
+                return true
+            } else {
+                return false
+            }
+        } else {
+            return false
+        }
+    }
+    
+    func performAddRestaurantCtrl(tabBarCtrl: UITabBarController) -> Bool {
+        if let navCtrl = tabBarCtrl.viewControllers?[0] {
+            let restaurantTableViewCtrl = navCtrl.childViewControllers[0]
+            restaurantTableViewCtrl.performSegue(withIdentifier: "addRestaurant", sender: restaurantTableViewCtrl)
+            
+            return true
+        } else {
+            return false
+        }
+    }
+    
+    func saveContext() {
+        let context = container.viewContext
+        
+        if context.hasChanges {
+            do {
+                try context.save()
+                print("Cord Data Saving OK")
+            } catch {
+                let nserror = error as NSError
+                fatalError("Unresolved error: \(nserror), \(nserror.userInfo)")
+            }
+        }
+    }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Tab bar setting
+//        let tabBar = UITabBar.appearance()
+//        tabBar.tintColor = UIColor.white
+//        tabBar.barTintColor = UIColor(red: 236 / 255, green: 236 / 255, blue: 236 / 255, alpha: 1.0)
+//        tabBar.selectionIndicatorImage = UIImage(named: "tabitem-selected")
+        
+        // 通知許可を求める
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert], completionHandler: {
+            granted, error in
+            
+            if granted {
+                print("OK")
+            } else {
+                print("no permission")
+            }
+        })
+        
+        // アプリでステータスバーのスタイル設定
+        UIApplication.shared.statusBarStyle = .lightContent
+        
+        let navigationBar = UINavigationBar.appearance()
+        
+        // navigation bar 背景色
+        navigationBar.barTintColor = UIColor(red: 216/255, green: 74/255, blue: 32/255, alpha: 1)
+        
+        // tintColor 控制導覽項目與導覽列按鈕項目的顏色
+        navigationBar.tintColor = UIColor.white
+        
+        // 導覽標題的字型
+        if let barFont = UIFont(name: "AvenirNextCondensed-DemiBold", size: 24) {
+            UINavigationBar.appearance().titleTextAttributes = [
+                NSAttributedStringKey.foregroundColor : UIColor.white,
+                NSAttributedStringKey.font : barFont
+            ]
+        }
+        
         return true
     }
 
