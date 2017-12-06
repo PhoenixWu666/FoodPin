@@ -11,7 +11,7 @@ import CoreData
 import UserNotifications
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     
     enum QuickAction: String {
         case OpenFavorites = "OpenFavorites"
@@ -41,6 +41,32 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         return container
     }()
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        if response.actionIdentifier == "foodpin.makeReservation" {
+            let fetchReq: NSFetchRequest<RestaurantMO> = RestaurantMO.fetchRequest()
+            let sortDescriptor = NSSortDescriptor(key: "name", ascending: true)
+            fetchReq.sortDescriptors = [sortDescriptor]
+            
+            let context = container.viewContext
+            let fetchResultController = NSFetchedResultsController(fetchRequest: fetchReq, managedObjectContext: context, sectionNameKeyPath: nil, cacheName: nil)
+            
+            do {
+                try fetchResultController.performFetch()
+                
+                if let result = fetchResultController.fetchedObjects {
+                    if result.count > 0 {
+                        print("result: \(result.count)")
+                        // TODO move to restaurant detail
+                    }
+                }
+            } catch {
+                print(error)
+            }
+        }
+        
+        completionHandler()
+    }
     
     /**
      Function from UIApplicationDelegate.
@@ -115,6 +141,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 print("no permission")
             }
         })
+        
+        // notification delegate
+        UNUserNotificationCenter.current().delegate = self
         
         // アプリでステータスバーのスタイル設定
         UIApplication.shared.statusBarStyle = .lightContent

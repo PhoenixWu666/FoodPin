@@ -24,11 +24,35 @@ class RestaurantTableViewController: UITableViewController, NSFetchedResultsCont
     
     var fetchResultController: NSFetchedResultsController<RestaurantMO>!
     
+    func configureNotificationAction(content: UNMutableNotificationContent) {
+        let categoryID = "foodpin.restaurantAction"
+        let makeReservationAction = UNNotificationAction(identifier: "foodpin.makeReservation", title: "Reserve a table", options: [.foreground])
+        let cancelAction = UNNotificationAction(identifier: "foodpin.cancel", title: "Later", options: [])
+        let category = UNNotificationCategory(identifier: categoryID, actions: [makeReservationAction, cancelAction], intentIdentifiers: [], options: [])
+        
+        // Set category
+        UNUserNotificationCenter.current().setNotificationCategories([category])
+        
+        content.categoryIdentifier = categoryID
+    }
+    
+    func appendImgIntoNotification(content: UNMutableNotificationContent, restaurant: RestaurantMO) {
+        let tempDirURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+        let tempFileURL = tempDirURL.appendingPathComponent("suggested-restaurant.jpg")
+        
+        if let img = UIImage(data: restaurant.image! as Data) {
+            try? UIImageJPEGRepresentation(img, 1.0)?.write(to: tempFileURL)
+            
+            if let restaurantImg = try? UNNotificationAttachment(identifier: "restaurantImg", url: tempFileURL, options: nil) {
+                content.attachments = [restaurantImg]
+            }
+        }
+    }
+    
     /*
      ローカル通知示す
      */
     func prepareNotification() {
-        print("restaurant count: \(restaurants.count)")
         guard restaurants.count > 0 else { return }
         
         let suggestedRestaurant = restaurants[0]
@@ -40,8 +64,14 @@ class RestaurantTableViewController: UITableViewController, NSFetchedResultsCont
         content.body = "こんにちは。今日 FoodPin で新しいレストラン見つけましたか？今日のおすすめのレストランは一件あります。\(suggestedRestaurant.name!) をぜひ試していただきましょう！"
         content.sound = UNNotificationSound.default()
         
+        // イメージ追加
+        appendImgIntoNotification(content: content, restaurant: suggestedRestaurant)
+        
+        // カスタムアクション設定
+        configureNotificationAction(content: content)
+        
         // time trigger
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 20, repeats: false)
         
         // notification request
         let request = UNNotificationRequest(identifier: "foodpin.10secTestNotification", content: content, trigger: trigger)
