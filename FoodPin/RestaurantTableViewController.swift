@@ -10,7 +10,7 @@ import UIKit
 import CoreData
 import UserNotifications
 
-class RestaurantTableViewController: UITableViewController, NSFetchedResultsControllerDelegate, UISearchResultsUpdating, UIViewControllerPreviewingDelegate {
+class RestaurantTableViewController: UITableViewController, NSFetchedResultsControllerDelegate, UISearchResultsUpdating, UIViewControllerPreviewingDelegate, UNUserNotificationCenterDelegate {
     
     var searchResults: [RestaurantMO] = []
     
@@ -23,6 +23,24 @@ class RestaurantTableViewController: UITableViewController, NSFetchedResultsCont
     let undoCheckInActionTitle = "Undo check in"
     
     var fetchResultController: NSFetchedResultsController<RestaurantMO>!
+    
+    var restaurantFromNotification: RestaurantMO?
+    
+    fileprivate func displayDetail() {
+        if restaurants.count > 0 {
+            restaurantFromNotification = restaurants[0]
+            
+            OperationQueue.main.addOperation {
+                self.performSegue(withIdentifier: "showRestaurantDetail", sender: self)
+            }
+        }
+    }
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        displayDetail()
+        
+        completionHandler()
+    }
     
     func configureNotificationAction(content: UNMutableNotificationContent) {
         let categoryID = "foodpin.restaurantAction"
@@ -196,12 +214,13 @@ class RestaurantTableViewController: UITableViewController, NSFetchedResultsCont
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        print("RestaurantTableViewController.viewWillAppear(_:)")
         
-        if !UserDefaults.standard.bool(forKey: "hasViewedWalkthrough") {
-            if let walkthroughPageController = loadViewControllerWithID("WalkthroughController") as? WalkthroughPageViewController {
-                present(walkthroughPageController, animated: true, completion: nil)
-            }
-        }
+//        if !UserDefaults.standard.bool(forKey: "hasViewedWalkthrough") {
+//            if let walkthroughPageController = loadViewControllerWithID("WalkthroughController") as? WalkthroughPageViewController {
+//                present(walkthroughPageController, animated: true, completion: nil)
+//            }
+//        }
         
         // 用來測試導覽頁面，想測的時候就將註解拿掉
 //        UserDefaults.standard.set(false, forKey: "hasViewedWalkthrough")
@@ -216,7 +235,11 @@ class RestaurantTableViewController: UITableViewController, NSFetchedResultsCont
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "showRestaurantDetail" {
-            if let indexPath = tableView.indexPathForSelectedRow {
+            if restaurantFromNotification != nil {
+                if let targetController = segue.destination as? RestaurantDetailViewController {
+                    targetController.restaurant = restaurantFromNotification
+                }
+            } else if let indexPath = tableView.indexPathForSelectedRow {
                 let destinationController = segue.destination as! RestaurantDetailViewController
                 let idx = indexPath.row
                 
@@ -349,6 +372,11 @@ class RestaurantTableViewController: UITableViewController, NSFetchedResultsCont
         
         // 通知サンプル
         prepareNotification()
+        UNUserNotificationCenter.current().delegate = self
+        
+        if let appDelegate = UIApplication.shared.delegate as? AppDelegate, appDelegate.isLaunchedByNotification {
+            displayDetail()
+        }
     }
     
 }

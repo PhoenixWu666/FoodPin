@@ -145,7 +145,7 @@ class AddRestaurantController: UITableViewController, UIImagePickerControllerDel
                 
                 // save
                 appDelegate.saveContext()
-//                saveRecordToCloud(restaurant: restaurant)
+                saveRecordToCloud(restaurant: restaurant)
             }
             
             performSegue(withIdentifier: "unwindToHomeScreen", sender: self)

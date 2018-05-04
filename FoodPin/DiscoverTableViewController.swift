@@ -158,6 +158,7 @@ class DiscoverTableViewController: UITableViewController {
     }
     
     func initRefreshControl() {
+        // 這個 refreshControl 是 UITableViewController 的 property
         refreshControl = UIRefreshControl()
         refreshControl?.backgroundColor = UIColor.white
         refreshControl?.tintColor = UIColor.gray
