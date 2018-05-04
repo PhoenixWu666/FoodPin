@@ -26,6 +26,16 @@ class RestaurantTableViewController: UITableViewController, NSFetchedResultsCont
     
     var restaurantFromNotification: RestaurantMO?
     
+    // 以動畫顯示 cell
+    override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        let rotationTransform = CATransform3DTranslate(CATransform3DIdentity, 900, 0, 0)
+        cell.layer.transform = rotationTransform
+        
+        UIView.animate(withDuration: (3 + Double(1 * indexPath.row)), animations: {
+            cell.layer.transform = CATransform3DIdentity
+        })
+    }
+    
     fileprivate func displayDetail() {
         if restaurants.count > 0 {
             restaurantFromNotification = restaurants[0]
